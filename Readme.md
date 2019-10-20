@@ -1,5 +1,6 @@
 # Location IQ Geocode Provider 
 ###[(Based on Nominatim Geocoder provider)](https://github.com/geocoder-php/nominatim-provider)
+
 [![Build Status](https://travis-ci.org/geocoder-php/nominatim-provider.svg?branch=master)](http://travis-ci.org/geocoder-php/nominatim-provider)
 [![Latest Stable Version](https://poser.pugx.org/geocoder-php/nominatim-provider/v/stable)](https://packagist.org/packages/geocoder-php/nominatim-provider)
 [![Total Downloads](https://poser.pugx.org/geocoder-php/nominatim-provider/downloads)](https://packagist.org/packages/geocoder-php/nominatim-provider)
@@ -13,7 +14,7 @@
 ### Install
 
 ```bash
-composer require thomasbandit/locationiq-nominatim-provider
+composer require thomasbandit/locationiq-nominatim-provider:dev-master
 ```
 
 **Why not use the [LocationIQ Geocode Provider](https://github.com/geocoder-php/locationiq-provider)?**
