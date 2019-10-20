@@ -10,14 +10,14 @@ declare(strict_types=1);
  * @license    MIT License
  */
 
-namespace Geocoder\Provider\Nominatim\Model;
+namespace Geocoder\Provider\LocationIqNominatim\Model;
 
 use Geocoder\Model\Address;
 
 /**
  * @author Jonathan Beliën <jbe@geo6.be>
  */
-final class NominatimAddress extends Address
+final class LocationIqNominatimAddress extends Address
 {
     /**
      * @var string|null
@@ -48,6 +48,16 @@ final class NominatimAddress extends Address
      * @var string|null
      */
     private $type;
+
+    /**
+     * $var object|null
+     */
+    private $extraTags;
+
+    /**
+     * $var object|null
+     */
+    private $nameDetails;
 
     /**
      * @return null|string
@@ -195,5 +205,101 @@ final class NominatimAddress extends Address
         $new->type = $type;
 
         return $new;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getExtraTags()
+    {
+        return $this->extraTags;
+    }
+
+    /**
+     * @param null|string $extraTags
+     *
+     * @return NominatimAddress
+     */
+    public function withExtraTags(object $extraTags = null): self
+    {
+        $new = clone $this;
+        $new->extraTags = $extraTags;
+
+        return $new;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getNameDetails()
+    {
+        return $this->nameDetails;
+    }
+
+    /**
+     * @param null|string $nameDetails
+     *
+     * @return NominatimAddress
+     */
+    public function withNameDetails(object $nameDetails = null): self
+    {
+        $new = clone $this;
+        $new->nameDetails = $nameDetails;
+
+        return $new;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function toArray(): array
+    {
+        $adminLevels = [];
+        foreach ($this->getAdminLevels() as $adminLevel) {
+            $adminLevels[$adminLevel->getLevel()] = [
+                'name' => $adminLevel->getName(),
+                'code' => $adminLevel->getCode(),
+                'level' => $adminLevel->getLevel(),
+            ];
+        }
+
+        $lat = null;
+        $lon = null;
+        if (null !== $coordinates = $this->getCoordinates()) {
+            $lat = $coordinates->getLatitude();
+            $lon = $coordinates->getLongitude();
+        }
+
+        $countryName = null;
+        $countryCode = null;
+        if (null !== $country = $this->getCountry()) {
+            $countryName = $country->getName();
+            $countryCode = $country->getCode();
+        }
+
+        $noBounds = [
+            'south' => null,
+            'west' => null,
+            'north' => null,
+            'east' => null,
+        ];
+
+        return [
+            'providedBy' => 'locationiq',
+            'latitude' => $lat,
+            'longitude' => $lon,
+            'bounds' => null !== $this->getBounds() ? $this->getBounds()->toArray() : $noBounds,
+            'streetNumber' => $this->getStreetNumber(),
+            'streetName' => $this->getStreetName(),
+            'postalCode' => $this->getPostalCode(),
+            'locality' => $this->getLocality(),
+            'subLocality' => $this->getSubLocality(),
+            'adminLevels' => $adminLevels,
+            'country' => $countryName,
+            'countryCode' => $countryCode,
+            'timezone' => $this->getTimezone(),
+            'extraTags' => $this->getExtraTags(),
+            'nameDetails' => $this->getNameDetails(),
+        ];
     }
 }

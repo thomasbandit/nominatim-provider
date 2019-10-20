@@ -10,7 +10,7 @@ declare(strict_types=1);
  * @license    MIT License
  */
 
-namespace Geocoder\Provider\Nominatim;
+namespace Geocoder\Provider\LocationIqNominatim;
 
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidArgument;
@@ -23,59 +23,53 @@ use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
 use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Provider\Provider;
-use Geocoder\Provider\Nominatim\Model\NominatimAddress;
+use Geocoder\Provider\LocationIqNominatim\Model\LocationIqNominatimAddress;
 use Http\Client\HttpClient;
 
 /**
  * @author Niklas Närhinen <niklas@narhinen.net>
  * @author Jonathan Beliën <jbe@geo6.be>
  */
-final class Nominatim extends AbstractHttpProvider implements Provider
+final class LocationIqNominatim extends AbstractHttpProvider implements Provider
 {
+    /**
+     * @var string
+     */
+    const BASE_API_URL = 'https://locationiq.org/v1';
+
     /**
      * @var string
      */
     private $rootUrl;
 
     /**
-     * @var string
+     * @var bool
      */
-    private $userAgent;
+    private $extraTags = false;
 
     /**
-     * @var string
+     * @var bool
      */
-    private $referer;
-
-    /**
-     * @param HttpClient $client    an HTTP client
-     * @param string     $userAgent Value of the User-Agent header
-     * @param string     $referer   Value of the Referer header
-     *
-     * @return Nominatim
-     */
-    public static function withOpenStreetMapServer(HttpClient $client, string $userAgent, string $referer = ''): self
-    {
-        return new self($client, 'https://nominatim.openstreetmap.org', $userAgent, $referer);
-    }
+    private $nameDetails = false;
 
     /**
      * @param HttpClient $client    an HTTP client
      * @param string     $rootUrl   Root URL of the nominatim server
-     * @param string     $userAgent Value of the User-Agent header
      * @param string     $referer   Value of the Referer header
      */
-    public function __construct(HttpClient $client, $rootUrl, string $userAgent, string $referer = '')
+    public function __construct(HttpClient $client, string $apiKey, $extraTags = false, $nameDetails = false)
     {
-        parent::__construct($client);
-
-        $this->rootUrl = rtrim($rootUrl, '/');
-        $this->userAgent = $userAgent;
-        $this->referer = $referer;
-
-        if (empty($this->userAgent)) {
-            throw new InvalidArgument('The User-Agent must be set to use the Nominatim provider.');
+        if (empty($apiKey)) {
+            throw new InvalidCredentials('No API key provided.');
         }
+
+        $this->apiKey = $apiKey;
+        $this->extraTags = $extraTags;
+        $this->nameDetails = $nameDetails;
+
+        $this->rootUrl = 'https://us1.locationiq.com/v1';
+
+        parent::__construct($client);
     }
 
     /**
@@ -86,47 +80,22 @@ final class Nominatim extends AbstractHttpProvider implements Provider
         $address = $query->getText();
 
         // This API doesn't handle IPs
-        if (filter_var($address, FILTER_VALIDATE_IP)) {
-            throw new UnsupportedOperation('The Nominatim provider does not support IP addresses.');
-        }
+        // if (filter_var($address, FILTER_VALIDATE_IP)) {
+        //     throw new UnsupportedOperation('The Nominatim provider does not support IP addresses.');
+        // }
 
+        // $url = sprintf($this->getGeocodeEndpointUrl(), urlencode($address), $query->getLimit());
         $url = $this->rootUrl
-            .'/search?'
+            .'/search.php?'
             .http_build_query([
-                'format' => 'jsonv2',
+                'key' => $this->apiKey,
                 'q' => $address,
+                'format' => 'json',
                 'addressdetails' => 1,
                 'limit' => $query->getLimit(),
+                'extratags' => $this->extraTags,
+                'namedetails' => $this->nameDetails,
             ]);
-
-        $countrycodes = $query->getData('countrycodes');
-        if (!is_null($countrycodes)) {
-            if (is_array($countrycodes)) {
-                $countrycodes = array_map('strtolower', $countrycodes);
-
-                $url .= '&'.http_build_query([
-                    'countrycodes' => implode(',', $countrycodes),
-                ]);
-            } else {
-                $url .= '&'.http_build_query([
-                    'countrycodes' => strtolower($countrycodes),
-                ]);
-            }
-        }
-
-        $viewbox = $query->getData('viewbox');
-        if (!is_null($viewbox) && is_array($viewbox) && 4 === count($viewbox)) {
-            $url .= '&'.http_build_query([
-                'viewbox' => implode(',', $viewbox),
-            ]);
-
-            $bounded = $query->getData('bounded');
-            if (!is_null($bounded) && true === $bounded) {
-                $url .= '&'.http_build_query([
-                    'bounded' => 1,
-                ]);
-            }
-        }
 
         $content = $this->executeQuery($url, $query->getLocale());
 
@@ -142,6 +111,7 @@ final class Nominatim extends AbstractHttpProvider implements Provider
         $results = [];
         foreach ($json as $place) {
             $results[] = $this->jsonResultToLocation($place, false);
+
         }
 
         return new AddressCollection($results);
@@ -159,7 +129,7 @@ final class Nominatim extends AbstractHttpProvider implements Provider
         $url = $this->rootUrl
             .'/reverse?'
             .http_build_query([
-                'format' => 'jsonv2',
+                'format' => 'json',
                 'lat' => $latitude,
                 'lon' => $longitude,
                 'addressdetails' => 1,
@@ -228,7 +198,7 @@ final class Nominatim extends AbstractHttpProvider implements Provider
 
         $builder->setBounds($place->boundingbox[0], $place->boundingbox[2], $place->boundingbox[1], $place->boundingbox[3]);
 
-        $location = $builder->build(NominatimAddress::class);
+        $location = $builder->build(LocationIqNominatimAddress::class);
         $location = $location->withAttribution($place->licence);
         $location = $location->withDisplayName($place->display_name);
 
@@ -240,8 +210,15 @@ final class Nominatim extends AbstractHttpProvider implements Provider
         }
 
         if (false === $reverse) {
-            $location = $location->withCategory($place->category);
             $location = $location->withType($place->type);
+
+            if (isset($place->extratags)) {
+                $location = $location->withExtraTags($place->extratags);
+            }
+
+            if (isset($place->namedetails)) {
+                $location = $location->withNameDetails($place->namedetails);
+            }
         }
 
         return $location;
@@ -252,7 +229,7 @@ final class Nominatim extends AbstractHttpProvider implements Provider
      */
     public function getName(): string
     {
-        return 'nominatim';
+        return 'locationiq';
     }
 
     /**
@@ -270,11 +247,6 @@ final class Nominatim extends AbstractHttpProvider implements Provider
         }
 
         $request = $this->getRequest($url);
-        $request = $request->withHeader('User-Agent', $this->userAgent);
-
-        if (!empty($this->referer)) {
-            $request = $request->withHeader('Referer', $this->referer);
-        }
 
         return $this->getParsedResponse($request);
     }
