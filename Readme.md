@@ -1,5 +1,5 @@
 # Location IQ Geocode Provider 
-###[(Based on Nominatim Geocoder provider)](https://github.com/geocoder-php/nominatim-provider)
+### [(Based on Nominatim Geocoder provider)](https://github.com/geocoder-php/nominatim-provider)
 
 [![Build Status](https://travis-ci.org/geocoder-php/nominatim-provider.svg?branch=master)](http://travis-ci.org/geocoder-php/nominatim-provider)
 [![Latest Stable Version](https://poser.pugx.org/geocoder-php/nominatim-provider/v/stable)](https://packagist.org/packages/geocoder-php/nominatim-provider)
