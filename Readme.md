@@ -1,4 +1,5 @@
-# Nominatim Geocoder provider
+# Location IQ Geocode Provider 
+###[(Based on Nominatim Geocoder provider)](https://github.com/geocoder-php/nominatim-provider)
 [![Build Status](https://travis-ci.org/geocoder-php/nominatim-provider.svg?branch=master)](http://travis-ci.org/geocoder-php/nominatim-provider)
 [![Latest Stable Version](https://poser.pugx.org/geocoder-php/nominatim-provider/v/stable)](https://packagist.org/packages/geocoder-php/nominatim-provider)
 [![Total Downloads](https://poser.pugx.org/geocoder-php/nominatim-provider/downloads)](https://packagist.org/packages/geocoder-php/nominatim-provider)
@@ -7,18 +8,28 @@
 [![Quality Score](https://img.shields.io/scrutinizer/g/geocoder-php/nominatim-provider.svg?style=flat-square)](https://scrutinizer-ci.com/g/geocoder-php/nominatim-provider)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
 
-This is the Nominatim provider from the PHP Geocoder. This is a **READ ONLY** repository. See the
-[main repo](https://github.com/geocoder-php/Geocoder) for information and documentation.
-
-All usage of the Nominatim provider using `nominatim.openstreetmap.org` must follow the [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/) !
+**This is a quick fork of the [Nominatim Geocode Provider](https://github.com/geocoder-php/nominatim-provider) to use the [LocationIQ](https://locationiq.com/) service and append the `type`, `extraDetails` and `nameDetails` properties to the default Address data.**
 
 ### Install
 
 ```bash
-composer require geocoder-php/nominatim-provider
+composer require thomasbandit/locationiq-nominatim-provider
 ```
 
-### Contribute
+**Why not use the [LocationIQ Geocode Provider](https://github.com/geocoder-php/locationiq-provider)?**
+* The [Nominatim Geocode Provider](https://github.com/geocoder-php/nominatim-provider) enables use of the `type` property via `withType` or `getType` functions whereas the [LocationIQ Geocode Provider](https://github.com/geocoder-php/locationiq-provider) doesn't. I went an extra step further and also provided the `extraDetails` and `nameDetails` properties; both can be separately disabled.. 
 
-Contributions are very welcome! Send a pull request to the [main repository](https://github.com/geocoder-php/Geocoder) or 
-report any issues you find on the [issue tracker](https://github.com/geocoder-php/Geocoder/issues).
+**Differences to the [LocationIQ Geocode Provider](https://github.com/geocoder-php/locationiq-provider)**
+* This calls the LocationIQ requesting a JSON response than XML.
+* The `type`, `extraDetails` and `nameDetails` properties have been added to the Address model.
+* There are two extra arguments in the Laravel config, both are `false` by default:
+
+```
+    'providers' => [
+        LocationIqNominatim::class => [
+            env('LOCATION_IQ_API_KEY'),
+            true, // Include extraDetails
+            true, // Include nameDetails
+        ],
+    ],
+````
