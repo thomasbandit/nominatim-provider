@@ -298,6 +298,8 @@ final class LocationIqNominatimAddress extends Address
             'country' => $countryName,
             'countryCode' => $countryCode,
             'timezone' => $this->getTimezone(),
+            'type' => $this->getType(),
+            'osmType' => $this->getOSMType(),
             'extraTags' => $this->getExtraTags(),
             'nameDetails' => $this->getNameDetails(),
         ];
